@@ -1,0 +1,22 @@
+- name: stop helloworld
+  service: name=helloworld state=stopped
+
+- name: Backup older Jar
+  copy:
+    src: /opt/gs-spring-boot.jar
+    dest: /opt/gs-spring-boot-bkp.jar
+    force: yes
+
+- name: copy Application jar to /opt
+  copy:
+    src: /opt/springboohello-CICD/target/gs-spring-boot-{{ my_version }}.jar
+    dest: /opt/gs-spring-boot-{{ my_version }}.jar
+    force: yes
+    mode: 0755
+
+- name: Create soft link from old to new version
+  file:
+   src: /opt/gs-spring-boot-{{ my_version }}.jar
+   dest: /opt/gs-spring-boot.jar
+   state: link
+   force: yes

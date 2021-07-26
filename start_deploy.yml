@@ -1,0 +1,18 @@
+---
+- name: start a deployment
+  hosts: localhost
+  gather_facts: yes
+  serial: 1
+  
+  vars:
+    my_version: "{{ version }}"  
+  tasks:
+    - include: tasks/system.yml
+      when: rollback is undefined
+
+    - include: tasks/system-rollback.yml
+      when: rollback is defined
+
+    - include: tasks/start_helloworld.yml
+      vars:
+        app_version: rollback

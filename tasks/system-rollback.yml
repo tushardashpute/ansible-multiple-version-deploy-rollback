@@ -1,0 +1,17 @@
+- name: check if backup file exists
+  stat: path="/opt/gs-spring-boot-bkp.jar"
+  register: st
+
+- name: check if backup file exists
+  fail: msg="Abort rollback. Backup file doesn't exist"
+  when: not st.stat.exists
+
+- name: stop helloworld
+  service: name=helloworld state=stopped
+
+- name: Point softlink to backup file
+  file:
+    src: /opt/gs-spring-boot-{{ my_version }}.jar
+    dest: /opt/gs-spring-boot.jar
+    state: link
+    force: yes
