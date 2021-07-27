@@ -11,7 +11,7 @@
 
 - name: Point softlink to backup file
   file:
-    src: /opt/gs-spring-boot-{{ my_version }}.jar
+    src: /opt/gs-spring-boot-bkp.jar
     dest: /opt/gs-spring-boot.jar
     state: link
     force: yes
