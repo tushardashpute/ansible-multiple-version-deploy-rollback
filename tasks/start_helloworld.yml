@@ -1,3 +1,19 @@
+- name: Get instance Id
+  shell: "wget -q -O - http://169.254.169.254/latest/meta-data/instance-id"
+  register: inst_id
+
+- name: Print info
+  debug:
+     msg: "{{ inst_id }}"
+
+- name: Attach each EC2 instance to the ELB
+  local_action: community.aws.elb_target
+  args:
+    state: present
+    target_group_name: ansbile-tg
+    region: us-east-2
+    target_id: "{{ inst_id.stdout }}"
+
 - name: just force systemd to reread configs (2.4 and above)
   systemd:
     daemon_reload: yes

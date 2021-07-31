@@ -1,6 +1,6 @@
 ---
 - name: start a deployment
-  hosts: localhost
+  hosts: test
   gather_facts: yes
   serial: 1
   

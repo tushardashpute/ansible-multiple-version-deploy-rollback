@@ -1,17 +1,29 @@
 - name: check if backup file exists
-  stat: path="/opt/gs-spring-boot-bkp.jar"
+  stat: path="/opt/gs-spring-boot-{{ version }}.jar"
   register: st
 
 - name: check if backup file exists
   fail: msg="Abort rollback. Backup file doesn't exist"
   when: not st.stat.exists
 
+- name: Get instance Id
+  shell: "wget -q -O - http://169.254.169.254/latest/meta-data/instance-id"
+  register: inst_id
+
+- name: Dettach each EC2 instance from target group
+  local_action: community.aws.elb_target
+  args:
+    state: absent
+    target_group_name: ansbile-tg
+    region: us-east-2
+    target_id: "{{ inst_id.stdout }}"
+
 - name: stop helloworld
   service: name=helloworld state=stopped
 
 - name: Point softlink to backup file
   file:
-    src: /opt/gs-spring-boot-bkp.jar
+    src: /opt/gs-spring-boot-{{ version }}.jar
     dest: /opt/gs-spring-boot.jar
     state: link
     force: yes

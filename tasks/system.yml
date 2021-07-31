@@ -1,26 +1,3 @@
-- name: stop helloworld
-  service: name=helloworld state=stopped
-
-- name: Backup older Jar
-  copy:
-    src: /opt/gs-spring-boot.jar
-    dest: /opt/gs-spring-boot-bkp.jar
-    force: yes
-
-- name: copy Application jar to /opt
-  copy:
-    src: /opt/springboohello-CICD/target/gs-spring-boot-{{ my_version }}.jar
-    dest: /opt/gs-spring-boot-{{ my_version }}.jar
-    force: yes
-    mode: 0755
-
-- name: Create soft link from old to new version
-  file:
-   src: /opt/gs-spring-boot-{{ my_version }}.jar
-   dest: /opt/gs-spring-boot.jar
-   state: link
-   force: yes
-
 - name: check if helloworld service created
   stat: path="/etc/systemd/system/helloworld.service"
   register: st
@@ -36,9 +13,64 @@
     src: ./helloworld.service
     dest: /etc/systemd/system/
     mode: 0755
+    remote_src: yes
   when: st.stat.exists == False
+
+- name: check if gs-spring-boot file is present
+  stat: path="/opt/gs-spring-boot"
+  register: gs_state
+
+- name: Copy gs-spring-boot from local to remote
+  copy: 
+   src: ./gs-spring-boot
+   dest: /opt/
+   mode: 755
+  when: gs_state.stat.exists == False
 
 - name: just force systemd to reread configs (2.4 and above)
   systemd:
     daemon_reload: yes
   when: st.stat.exists == False
+
+- name: stop helloworld
+  service: name=helloworld state=stopped
+
+- name: Backup older Jar
+  copy:
+    src: /opt/gs-spring-boot.jar
+    dest: /opt/gs-spring-boot-bkp.jar
+    remote_src: yes
+    force: yes
+
+- name: copy Application jar to /opt
+  copy:
+    src: /opt/springboohello-CICD/target/gs-spring-boot-{{ my_version }}.jar
+    dest: /opt/gs-spring-boot-{{ my_version }}.jar
+    force: yes
+    mode: 0755
+
+- name: Get instance Id
+  shell: "wget -q -O - http://169.254.169.254/latest/meta-data/instance-id"
+  register: inst_id
+
+- name: Print info
+  debug: 
+     msg: "{{ inst_id }}"
+
+- name: Dettach each EC2 instance to the ELB
+  local_action: community.aws.elb_target
+  args:
+    state: absent
+    target_group_name: ansbile-tg
+    region: us-east-2
+    target_id: "{{ inst_id.stdout }}"
+
+- name: Wait for till instance dettach
+  shell: "sleep 20"
+
+- name: Create soft link from old to new version
+  file:
+   src: /opt/gs-spring-boot-{{ my_version }}.jar
+   dest: /opt/gs-spring-boot.jar
+   state: link
+   force: yes
